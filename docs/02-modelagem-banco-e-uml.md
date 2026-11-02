@@ -1,8 +1,4 @@
-# 📊 Burguer & Sabor — Modelagem de Banco de Dados (DER) e Diagrama de Classes UML
-
-## 1. Modelo Entidade-Relacionamento (DER Lógico)
-
-### Diagrama Visual (Mermaid)
+# BurguerSabor — Modelagem de Banco de Dados (DER) e Diagrama de Classes UML
 
 ```mermaid
 erDiagram
@@ -18,7 +14,7 @@ erDiagram
     usuarios {
         int id PK
         string nome
-        string email UQ
+        string email
         string senha_hash
         string tipo_usuario
     }
@@ -30,7 +26,7 @@ erDiagram
     }
     categorias {
         int id PK
-        string nome UQ
+        string nome
         boolean ativo
     }
     produtos {
@@ -42,7 +38,7 @@ erDiagram
     }
     insumos_estoque {
         int id PK
-        string nome_item UQ
+        string nome_item
         decimal quantidade_disponivel
         string unidade_medida
     }
@@ -72,7 +68,8 @@ erDiagram
         string forma_pagamento
         string status_pagamento
     }
-
+```
+```mermaid
 classDiagram
     class Usuario {
         +Long id
@@ -157,11 +154,12 @@ classDiagram
         +processarPagamento() Boolean
     }
 
-    Usuario "1" *-- "N" Endereco : Composição
-    Usuario "1" -- "N" Pedido : Associação
-    Categoria "1" o-- "N" Produto : Agregação
-    Produto "1" -- "N" FichaTecnica : Associação
-    InsumoEstoque "1" -- "N" FichaTecnica : Associação
-    Pedido "1" *-- "N" ItemPedido : Composição
-    Produto "1" -- "N" ItemPedido : Associação
-    Pedido "1" -- "1" Pagamento : Associação Direta
+    Usuario "1" *-- "N" Endereco : Composicao
+    Usuario "1" -- "N" Pedido : Associacao
+    Categoria "1" o-- "N" Produto : Agregacao
+    Produto "1" -- "N" FichaTecnica : Associacao
+    InsumoEstoque "1" -- "N" FichaTecnica : Associacao
+    Pedido "1" *-- "N" ItemPedido : Composicao
+    Produto "1" -- "N" ItemPedido : Associacao
+    Pedido "1" -- "1" Pagamento : Associacao Direta
+```
