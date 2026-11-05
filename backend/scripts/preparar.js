@@ -45,7 +45,12 @@ async function criarEnv() {
   console.log('\nPrimeira vez por aqui: vou criar o arquivo de configuração (.env).');
   const usuario = (await perguntar('Usuário do PostgreSQL [postgres]: ')) || 'postgres';
   const senha = await perguntar('Senha desse usuário: ');
-  const porta = (await perguntar('Porta do PostgreSQL [5432]: ')) || '5432';
+  // A porta é só o número do PostgreSQL (normalmente 5432), não o endereço do site
+  let porta = '';
+  while (!/^\d{2,5}$/.test(porta)) {
+    porta = (await perguntar('Porta do PostgreSQL [5432] (só aperte Enter): ')) || '5432';
+    if (!/^\d{2,5}$/.test(porta)) console.log('A porta é só um número, normalmente 5432. Tente de novo.');
+  }
   const credencial = `${encodeURIComponent(usuario)}:${encodeURIComponent(senha)}`;
   let conteudo = fs.readFileSync(exemploPath, 'utf8');
   conteudo = conteudo
@@ -69,6 +74,15 @@ async function main() {
   if (!fs.existsSync(envPath)) await criarEnv();
 
   let env = lerEnv();
+  for (const chave of ['DATABASE_URL', 'DATABASE_URL_TEST']) {
+    try {
+      new URL(env[chave]);
+    } catch {
+      console.error(`\nO endereço do banco (${chave}) no arquivo backend\\.env está inválido.`);
+      console.error('Apague o arquivo backend\\.env e rode o Iniciar de novo. Na pergunta da porta, só aperte Enter (5432).');
+      process.exit(1);
+    }
+  }
   if (!env.JWT_SECRET || env.JWT_SECRET === SEGREDO_EXEMPLO || env.JWT_SECRET.length < 16) {
     trocarNoEnv('JWT_SECRET', crypto.randomBytes(32).toString('hex'));
     console.log('Segredo de login (JWT_SECRET) gerado automaticamente.');
