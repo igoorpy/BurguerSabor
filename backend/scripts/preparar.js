@@ -131,5 +131,7 @@ async function main() {
 
 main().catch((erro) => {
   console.error(`\nErro ao preparar: ${erro.message}`);
+  // Detalhe técnico para diagnóstico (a senha do banco é escondida)
+  console.error(String(erro.stack || '').replace(/(:\/\/[^:\s]*:)[^@\s]*@/g, '$1****@'));
   process.exit(1);
 });
