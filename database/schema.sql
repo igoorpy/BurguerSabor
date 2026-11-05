@@ -7,6 +7,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. LIMPEZA DO ESQUEMA (Remoção ordenada em cascata para evitar conflito de FK)
+DROP TABLE IF EXISTS avaliacoes CASCADE;
 DROP TABLE IF EXISTS alertas_estoque CASCADE;
 DROP TABLE IF EXISTS movimentacoes_estoque CASCADE;
 DROP TABLE IF EXISTS pagamentos CASCADE;
@@ -131,7 +132,16 @@ CREATE TABLE alertas_estoque (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 13. ÍNDICES DE DESEMPENHO E OTIMIZAÇÃO DE CONSULTAS
+-- 13. AVALIAÇÃO DO PEDIDO PELO CLIENTE (1:1 com pedidos, só depois de entregue)
+CREATE TABLE avaliacoes (
+    id SERIAL PRIMARY KEY,
+    pedido_id INT NOT NULL UNIQUE REFERENCES pedidos(id) ON DELETE CASCADE,
+    nota INT NOT NULL CHECK (nota BETWEEN 1 AND 5),
+    comentario VARCHAR(300),
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. ÍNDICES DE DESEMPENHO E OTIMIZAÇÃO DE CONSULTAS
 CREATE INDEX idx_produtos_categoria ON produtos (categoria_id);
 CREATE INDEX idx_pedidos_cliente ON pedidos (cliente_id);
 CREATE INDEX idx_pedidos_status ON pedidos (status);

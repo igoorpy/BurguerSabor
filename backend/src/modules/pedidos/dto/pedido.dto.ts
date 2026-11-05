@@ -11,10 +11,12 @@ import {
   IsPositive,
   IsString,
   Max,
+  Min,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
 import {
+  Avaliacao,
   FORMAS_PAGAMENTO,
   FormaPagamento,
   Pedido,
@@ -52,6 +54,16 @@ export class CreatePedidoDto {
   @IsArray() @ArrayMinSize(1, { message: 'o pedido precisa de ao menos 1 item' }) @ArrayMaxSize(30)
   @ValidateNested({ each: true }) @Type(() => ItemPedidoDto)
   itens: ItemPedidoDto[];
+}
+
+export class AvaliarPedidoDto {
+  @ApiProperty({ example: 5, minimum: 1, maximum: 5, description: 'Nota de 1 a 5' })
+  @IsInt() @Min(1) @Max(5)
+  nota: number;
+
+  @ApiPropertyOptional({ example: 'Chegou quentinho!', maxLength: 300 })
+  @IsOptional() @IsString() @MaxLength(300)
+  comentario?: string;
 }
 
 export class UpdateStatusDto {
@@ -92,6 +104,12 @@ class PagamentoResponseDto {
   @ApiProperty({ example: 62 }) valorPago: number;
 }
 
+class AvaliacaoResponseDto {
+  @ApiProperty({ example: 5 }) nota: number;
+  @ApiProperty({ example: 'Chegou quentinho!', nullable: true, type: String }) comentario: string | null;
+  @ApiProperty({ example: '2026-11-04T23:40:00.000Z' }) criadoEm: Date;
+}
+
 export class PedidoResponseDto {
   @ApiProperty({ example: 1 }) id: number;
   @ApiProperty({ example: 2 }) clienteId: number;
@@ -102,6 +120,7 @@ export class PedidoResponseDto {
   @ApiProperty({ example: '2026-11-04T23:40:00.000Z' }) criadoEm: Date;
   @ApiProperty({ type: [ItemPedidoResponseDto] }) itens: ItemPedidoResponseDto[];
   @ApiProperty({ type: PagamentoResponseDto, nullable: true }) pagamento: PagamentoResponseDto | null;
+  @ApiProperty({ type: AvaliacaoResponseDto, nullable: true, description: 'Preenchida depois que o cliente avalia' }) avaliacao: Avaliacao | null;
 
   static from(p: Pedido): PedidoResponseDto {
     return {

@@ -88,6 +88,12 @@ export interface Pagamento {
   valorPago: number;
 }
 
+export interface Avaliacao {
+  nota: number;
+  comentario: string | null;
+  criadoEm: Date;
+}
+
 export interface Pedido {
   id: number;
   clienteId: number;
@@ -98,6 +104,7 @@ export interface Pedido {
   criadoEm: Date;
   itens: ItemPedido[];
   pagamento: Pagamento | null;
+  avaliacao: Avaliacao | null;
 }
 
 export interface MovimentacaoEstoque {

@@ -25,6 +25,33 @@ Pré-requisitos: [Node.js LTS](https://nodejs.org) e [PostgreSQL](https://www.po
 | Admin | admin@burguersabor.com | admin123 |
 | Cliente | hudson@email.com | cliente123 |
 
+## Ver o banco no PostgreSQL (pgAdmin)
+
+O `Iniciar BurguerSabor.bat` cria o banco **`burguer_sabor`** no PostgreSQL do seu computador. Para abrir:
+
+1. Abra o **pgAdmin** e conecte no servidor local (usuário `postgres`, a mesma senha que você digitou no Iniciar).
+2. Vá em **Databases > burguer_sabor > Schemas > public > Tables**: aparecem as 12 tabelas (usuarios, produtos, insumos_estoque, pedidos, avaliacoes...).
+3. Clique com o botão direito numa tabela > **View/Edit Data > All Rows** para ver os dados.
+4. Ou abra o **Query Tool** (botão direito em `burguer_sabor`) e rode, por exemplo:
+
+```sql
+-- Pedidos com status e pagamento
+SELECT p.id, u.nome AS cliente, p.status, p.valor_total, pg.forma_pagamento, pg.status_pagamento
+FROM pedidos p JOIN usuarios u ON u.id = p.cliente_id JOIN pagamentos pg ON pg.pedido_id = p.id
+ORDER BY p.id DESC;
+
+-- O que saiu do estoque em cada pedido
+SELECT m.pedido_id, i.nome_item, m.tipo, m.quantidade, m.criado_em
+FROM movimentacoes_estoque m JOIN insumos_estoque i ON i.id = m.insumo_id
+WHERE m.pedido_id IS NOT NULL ORDER BY m.id DESC;
+
+-- Ingredientes acabando
+SELECT nome_item, quantidade_disponivel, estoque_minimo FROM insumos_estoque
+WHERE quantidade_disponivel <= estoque_minimo;
+```
+
+Tudo que acontece no site (cadastro, pedido, baixa de estoque, avaliação) aparece nessas tabelas na hora. O banco `burguer_sabor_test` é só dos testes automatizados e é apagado a cada execução.
+
 ## Estrutura
 
 | Pasta | Conteúdo |

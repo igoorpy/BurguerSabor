@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { CurrentUser, Roles, UsuarioAutenticado } from '../../common/auth/auth.decorators';
 import { ErroResponseDto } from '../../common/dto/erro-response.dto';
 import {
+  AvaliarPedidoDto,
   CreatePedidoDto,
   ListPedidosQueryDto,
   PedidoResponseDto,
@@ -57,6 +58,21 @@ export class PedidosController {
     @Body() dto: UpdateStatusDto,
   ): Promise<PedidoResponseDto> {
     return PedidoResponseDto.from(await this.service.atualizarStatus(user, id, dto.status));
+  }
+
+  @Roles('CLIENTE')
+  @Post(':id/avaliacao')
+  @ApiOperation({ summary: 'O cliente avalia o pedido entregue com nota de 1 a 5 (uma vez)' })
+  @ApiResponse({ status: 201, type: PedidoResponseDto })
+  @ApiResponse({ status: 404, type: ErroResponseDto })
+  @ApiResponse({ status: 409, description: 'Pedido já avaliado', type: ErroResponseDto })
+  @ApiResponse({ status: 422, description: 'Pedido ainda não entregue ou nota fora de 1 a 5', type: ErroResponseDto })
+  async avaliar(
+    @CurrentUser() user: UsuarioAutenticado,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AvaliarPedidoDto,
+  ): Promise<PedidoResponseDto> {
+    return PedidoResponseDto.from(await this.service.avaliar(user, id, dto));
   }
 
   @Post(':id/cancelamento')

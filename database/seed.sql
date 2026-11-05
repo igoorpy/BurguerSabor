@@ -30,12 +30,13 @@ INSERT INTO insumos_estoque (nome_item, unidade_medida, quantidade_disponivel, p
 INSERT INTO movimentacoes_estoque (insumo_id, tipo, motivo, quantidade)
 SELECT id, 'ENTRADA', 'CADASTRO', quantidade_disponivel FROM insumos_estoque WHERE quantidade_disponivel > 0;
 
-INSERT INTO produtos (categoria_id, nome, descricao, preco) VALUES
-(1, 'Burguer X-Cheddar', 'Pão brioche, blend 180g e cheddar duplo', 28.50),   -- 1
-(2, 'Refrigerante Cola 350ml', 'Lata trincando de gelada', 6.00),             -- 2
-(1, 'Burguer X-Bacon', 'Pão brioche, blend 180g, cheddar e bacon', 32.00),    -- 3
-(3, 'Batata Frita Média', 'Porção de 200g de batata palito', 14.00),          -- 4
-(4, 'Pizza Calabresa', 'Massa, mussarela e calabresa', 45.00);                -- 5
+-- imagem_url aponta para as ilustrações em backend/public/img (o admin pode trocar por qualquer URL)
+INSERT INTO produtos (categoria_id, nome, descricao, preco, imagem_url) VALUES
+(1, 'Burguer X-Cheddar', 'Pão brioche, blend 180g e cheddar duplo', 28.50, '/img/x-cheddar.svg'),  -- 1
+(2, 'Refrigerante Cola 350ml', 'Lata trincando de gelada', 6.00, '/img/refrigerante.svg'),         -- 2
+(1, 'Burguer X-Bacon', 'Pão brioche, blend 180g, cheddar e bacon', 32.00, '/img/x-bacon.svg'),     -- 3
+(3, 'Batata Frita Média', 'Porção de 200g de batata palito', 14.00, '/img/batata.svg'),            -- 4
+(4, 'Pizza Calabresa', 'Massa, mussarela e calabresa', 45.00, '/img/pizza.svg');                   -- 5
 
 INSERT INTO ficha_tecnica (produto_id, insumo_id, quantidade_necessaria) VALUES
 (1, 1, 1.00),   -- 1 Pão Brioche

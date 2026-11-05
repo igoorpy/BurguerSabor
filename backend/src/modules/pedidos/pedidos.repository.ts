@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService, Queryable } from '../../database/database.service';
 import { toNumber } from '../../database/sql.util';
-import { FormaPagamento, ItemPedido, Pagamento, Pedido, StatusPagamento, StatusPedido } from '../../domain/entities';
+import { Avaliacao, FormaPagamento, ItemPedido, Pagamento, Pedido, StatusPagamento, StatusPedido } from '../../domain/entities';
 
 type PedidoRow = {
   id: number;
@@ -13,6 +13,7 @@ type PedidoRow = {
   criado_em: Date;
   itens: (Omit<ItemPedido, 'precoUnitario'> & { precoUnitario: number | string })[];
   pagamento: (Omit<Pagamento, 'valorPago'> & { valorPago: number | string }) | null;
+  avaliacao: Avaliacao | null;
 }
 
 const toPedido = (r: PedidoRow): Pedido => ({
@@ -25,6 +26,7 @@ const toPedido = (r: PedidoRow): Pedido => ({
   criadoEm: r.criado_em,
   itens: r.itens.map((i) => ({ ...i, precoUnitario: toNumber(i.precoUnitario) })),
   pagamento: r.pagamento ? { ...r.pagamento, valorPago: toNumber(r.pagamento.valorPago) } : null,
+  avaliacao: r.avaliacao,
 });
 
 /** Pedido com itens e pagamento em uma única consulta (json_agg). */
@@ -42,7 +44,11 @@ const SELECT_PEDIDO = `
            SELECT json_build_object(
                     'formaPagamento', pg.forma_pagamento, 'statusPagamento', pg.status_pagamento, 'valorPago', pg.valor_pago)
            FROM pagamentos pg WHERE pg.pedido_id = p.id
-         ) AS pagamento
+         ) AS pagamento,
+         (
+           SELECT json_build_object('nota', av.nota, 'comentario', av.comentario, 'criadoEm', av.criado_em)
+           FROM avaliacoes av WHERE av.pedido_id = p.id
+         ) AS avaliacao
   FROM pedidos p`;
 
 export interface NovaLinhaPedido {
@@ -134,6 +140,16 @@ export class PedidosRepository {
       'UPDATE pagamentos SET status_pagamento = $3 WHERE pedido_id = $1 AND status_pagamento = ANY($2::text[])',
       [pedidoId, de, para],
     );
+  }
+
+  /** Avaliação 1:1 com o pedido (pedido_id é UNIQUE). */
+  async insertAvaliacao(pedidoId: number, nota: number, comentario: string | null, q: Queryable): Promise<void> {
+    await q.query('INSERT INTO avaliacoes (pedido_id, nota, comentario) VALUES ($1, $2, $3)', [pedidoId, nota, comentario]);
+  }
+
+  async jaAvaliado(pedidoId: number, q: Queryable): Promise<boolean> {
+    const { rows } = await q.query('SELECT 1 FROM avaliacoes WHERE pedido_id = $1', [pedidoId]);
+    return rows.length > 0;
   }
 
   /** Relatório de saída: quanto de cada produto foi vendido (pedidos não cancelados). */

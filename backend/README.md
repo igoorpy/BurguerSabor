@@ -51,8 +51,8 @@ npm run start:dev
 
 A pasta `public/` tem um site em HTML, CSS e JavaScript puro, servido pela própria API (sem etapa de build):
 
-- **Cliente:** cardápio com categorias e busca, comanda (carrinho) com edição de quantidades, cadastro e login, endereços, escolha da forma de pagamento (Pix, cartão de crédito, cartão de débito ou dinheiro) e acompanhamento dos pedidos.
-- **Admin:** fila de pedidos com avanço de status e cancelamento, cadastro de produtos e categorias, receita (ficha técnica) e custo/lucro, estoque com reposição, extrato e alertas, e relatório de saída de produtos.
+- **Cliente (estilo app de delivery):** capa da loja com nota, tempo e taxa de entrega; cardápio por categoria com fotos e busca; detalhe do produto com observação; sacola; cadastro e login; endereços; forma de pagamento (Pix, cartão de crédito, cartão de débito ou dinheiro); acompanhamento do pedido que atualiza sozinho, com previsão de entrega; e avaliação com estrelas depois da entrega.
+- **Admin:** fila de pedidos ao vivo com avanço de status e cancelamento, avaliações dos clientes, foto no cadastro de produto, cadastro de produtos e categorias, receita (ficha técnica) e custo/lucro, estoque com reposição, extrato e alertas, e relatório de saída de produtos.
 
 ### Contas de teste (senhas fictícias)
 
@@ -82,6 +82,7 @@ início de cada arquivo de teste. Nunca aponte `DATABASE_URL_TEST` para o banco 
 | `test/e2e/insumos.e2e.spec.ts` | CRUD de insumos, reposição, extrato e alertas de reposição |
 | `test/e2e/enderecos.e2e.spec.ts` | Endereços do cliente (1:N) e isolamento entre clientes |
 | `test/e2e/pedidos.e2e.spec.ts` | Pedido atômico, baixa de estoque, CT-EST-001, CT-KDS-006, CT-MOB-005, cancelamento e relatório |
+| `test/e2e/loja.e2e.spec.ts` | Dados da loja, avaliação do pedido (só depois de entregue, uma vez) e foto do produto |
 | `test/e2e/swagger.e2e.spec.ts` | Swagger no ar, rotas e schemas documentados (CT-SWG-007) |
 
 Cada teste confere o **status HTTP** e o **formato do JSON** devolvido (contratos em `test/helpers.ts`).
@@ -116,6 +117,9 @@ Legenda: 🌐 pública · 👤 cliente · 🛠 admin · 🔑 qualquer usuário l
 | PATCH | `/pedidos/:id/status` | 🛠 | Avança o status, uma etapa por vez |
 | POST | `/pedidos/:id/cancelamento` | 🔑 | Cancela e devolve os insumos |
 | GET | `/relatorios/saida-produtos` | 🛠 | Saída de produtos e faturamento (`?de=&ate=`) |
+| POST | `/pedidos/:id/avaliacao` | 👤 | Avalia o pedido entregue (nota de 1 a 5, uma vez) |
+| GET | `/loja` | 🌐 | Taxa e tempo de entrega e nota média da loja |
+| GET | `/avaliacoes` | 🛠 | Avaliações dos clientes |
 
 ### Status HTTP usados
 

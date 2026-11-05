@@ -10,7 +10,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUrl,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -37,8 +37,10 @@ export class CreateProdutoDto {
   @IsNumber({ maxDecimalPlaces: 2 }) @IsPositive({ message: 'preco deve ser maior que zero' }) @Max(99_999_999)
   preco: number;
 
-  @ApiPropertyOptional({ example: 'https://exemplo.com/duplo.jpg' })
-  @IsOptional() @IsUrl() @MaxLength(255)
+  @ApiPropertyOptional({ example: '/img/x-cheddar.svg', description: 'URL da foto (https://...) ou caminho de uma imagem do site (/img/...)' })
+  @IsOptional()
+  @Matches(/^(https?:\/\/|\/)\S+$/, { message: 'imagemUrl deve começar com https://, http:// ou /' })
+  @MaxLength(255)
   imagemUrl?: string;
 
   @ApiPropertyOptional({ example: true, default: true })

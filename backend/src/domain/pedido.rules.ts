@@ -1,4 +1,4 @@
-import { BusinessRuleError } from '../common/errors';
+import { BusinessRuleError, ConflictError } from '../common/errors';
 import { FormaPagamento, StatusPagamento, StatusPedido } from './entities';
 import { multiplicar, somar } from './money';
 
@@ -39,6 +39,14 @@ export function validarCancelamento(atual: StatusPedido): void {
       cancelavelEm: PODE_CANCELAR,
     });
   }
+}
+
+/** O cliente avalia uma única vez, e só depois de receber o pedido. */
+export function validarAvaliacao(status: StatusPedido, jaAvaliado: boolean): void {
+  if (status !== 'CONCLUIDO') {
+    throw new BusinessRuleError('Só dá para avaliar depois que o pedido for entregue', { statusAtual: status });
+  }
+  if (jaAvaliado) throw new ConflictError('Este pedido já foi avaliado');
 }
 
 export interface LinhaValor {

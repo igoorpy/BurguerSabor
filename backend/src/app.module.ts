@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CategoriasModule } from './modules/categorias/categorias.module';
 import { EnderecosModule } from './modules/enderecos/enderecos.module';
 import { InsumosModule } from './modules/insumos/insumos.module';
+import { LojaModule } from './modules/loja/loja.module';
 import { PedidosModule } from './modules/pedidos/pedidos.module';
 import { ProdutosModule } from './modules/produtos/produtos.module';
 
@@ -36,6 +37,7 @@ import { ProdutosModule } from './modules/produtos/produtos.module';
     ProdutosModule,
     InsumosModule,
     PedidosModule,
+    LojaModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: AuthGuard }],
 })

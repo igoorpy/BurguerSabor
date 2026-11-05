@@ -5,12 +5,12 @@ import { BusinessRuleError, NotFoundError } from '../../common/errors';
 import { DatabaseService } from '../../database/database.service';
 import { Pedido, StatusPedido } from '../../domain/entities';
 import { calcularNecessidade, verificarFaltas } from '../../domain/estoque.rules';
-import { calcularTotais, statusInicialPagamento, validarCancelamento, validarTransicao } from '../../domain/pedido.rules';
+import { calcularTotais, statusInicialPagamento, validarAvaliacao, validarCancelamento, validarTransicao } from '../../domain/pedido.rules';
 import { EnderecosRepository } from '../enderecos/enderecos.repository';
 import { EstoqueService } from '../insumos/estoque.service';
 import { InsumosRepository } from '../insumos/insumos.repository';
 import { ProdutosRepository } from '../produtos/produtos.repository';
-import { CreatePedidoDto } from './dto/pedido.dto';
+import { AvaliarPedidoDto, CreatePedidoDto } from './dto/pedido.dto';
 import { PedidosRepository, SaidaProduto } from './pedidos.repository';
 
 @Injectable()
@@ -133,6 +133,17 @@ export class PedidosService {
       await this.repo.updateStatusPagamento(id, ['PENDENTE', 'APROVADO'], 'RECUSADO', tx);
     });
     return this.buscar(usuario, id);
+  }
+
+  /** O cliente avalia o próprio pedido, uma vez, depois de entregue. */
+  async avaliar(cliente: UsuarioAutenticado, id: number, dto: AvaliarPedidoDto): Promise<Pedido> {
+    await this.db.transaction(async (tx) => {
+      const pedido = await this.repo.lockById(id, tx);
+      if (!pedido || pedido.clienteId !== cliente.id) throw new NotFoundError(`Pedido ${id} não encontrado`);
+      validarAvaliacao(pedido.status, await this.repo.jaAvaliado(id, tx));
+      await this.repo.insertAvaliacao(id, dto.nota, dto.comentario?.trim() || null, tx);
+    });
+    return this.buscar(cliente, id);
   }
 
   saidaProdutos(de?: string, ate?: string): Promise<SaidaProduto[]> {

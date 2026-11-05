@@ -101,9 +101,14 @@ async function main() {
 
   const banco = new Client({ connectionString: env.DATABASE_URL });
   await banco.connect();
-  const { rows } = await banco.query("SELECT to_regclass('public.usuarios') IS NOT NULL AS existe");
+  // Se faltar alguma tabela (banco novo ou criado por uma versão antiga), recria tudo com os dados de exemplo
+  const tabelas = ['usuarios', 'pedidos', 'movimentacoes_estoque', 'alertas_estoque', 'avaliacoes'];
+  const { rows } = await banco.query(
+    'SELECT COUNT(*)::int AS existentes FROM unnest($1::text[]) AS t(nome) WHERE to_regclass($2 || t.nome) IS NOT NULL',
+    [tabelas, 'public.'],
+  );
   await banco.end();
-  if (!rows[0].existe) {
+  if (rows[0].existentes < tabelas.length) {
     await resetDatabase(env.DATABASE_URL);
     console.log('Tabelas e dados de exemplo criados.');
   }

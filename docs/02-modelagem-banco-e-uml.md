@@ -1,6 +1,6 @@
 # BurguerSabor — Modelagem de Banco de Dados (DER), Dicionário de Dados e Diagrama de Classes UML
 
-O modelo está normalizado até a **3ª Forma Normal**: cada tabela guarda um único assunto, todo atributo depende só da
+O modelo tem 12 tabelas e está normalizado até a **3ª Forma Normal**: cada tabela guarda um único assunto, todo atributo depende só da
 chave primária, e nada que possa ser calculado é repetido (o total de um item é `quantidade × preco_unitario`; o lucro
 de um produto é calculado pela ficha técnica). A única cópia intencional é `itens_pedido.preco_unitario`, que guarda o
 **preço histórico** do dia da compra (RF06): ele é um fato do pedido, não uma repetição do preço atual.
@@ -24,6 +24,7 @@ erDiagram
     insumos_estoque ||--o{ movimentacoes_estoque : "registra (1:N)"
     pedidos |o--o{ movimentacoes_estoque : "gera (0..1:N)"
     insumos_estoque ||--o{ alertas_estoque : "dispara (1:N)"
+    pedidos ||--o| avaliacoes : "recebe (1:0..1)"
 
     usuarios {
         int id PK
@@ -111,6 +112,13 @@ erDiagram
         int insumo_id FK
         decimal saldo
         boolean resolvido
+        timestamp criado_em
+    }
+    avaliacoes {
+        int id PK
+        int pedido_id FK,UK
+        int nota
+        string comentario
         timestamp criado_em
     }
 ```
@@ -240,6 +248,18 @@ quantidades); toda FK tem comportamento explícito de exclusão (RNF02).
 | resolvido | BOOLEAN | NOT NULL, DEFAULT FALSE | Fecha sozinho na reposição |
 | criado_em | TIMESTAMP | DEFAULT agora | Quando |
 | (insumo_id) WHERE resolvido = FALSE | — | UNIQUE parcial | No máximo 1 alerta aberto por insumo |
+
+### avaliacoes — nota do cliente para o pedido entregue (1:0..1)
+
+| Coluna | Tipo | Restrições | Descrição |
+|---|---|---|---|
+| id | SERIAL | PK | Identificador |
+| pedido_id | INT | NOT NULL, UNIQUE, FK → pedidos ON DELETE CASCADE | Cada pedido recebe no máximo uma avaliação |
+| nota | INT | NOT NULL, CHECK entre 1 e 5 | Estrelas |
+| comentario | VARCHAR(300) | — | Opcional |
+| criado_em | TIMESTAMP | DEFAULT agora | Quando |
+
+A API só aceita avaliação de pedido com status CONCLUIDO, feita pelo próprio cliente. A média aparece no topo da loja.
 
 ### Índices
 
