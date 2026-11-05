@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const net = require('net');
 const readline = require('readline');
 const { Client } = require('pg');
 const { resetDatabase } = require('./reset-db');
@@ -60,6 +61,28 @@ async function criarEnv() {
   console.log('Arquivo .env criado (ele fica só neste computador).');
 }
 
+function portaAberta(host, porta) {
+  return new Promise((resolve) => {
+    const s = net.connect({ host, port: porta });
+    const fim = (ok) => {
+      s.destroy();
+      resolve(ok);
+    };
+    s.setTimeout(1500, () => fim(false));
+    s.once('connect', () => fim(true));
+    s.once('error', () => fim(false));
+  });
+}
+
+async function procurarPostgres() {
+  for (const porta of [5432, 5433, 5434, 5435]) {
+    for (const host of ['127.0.0.1', '::1']) {
+      if (await portaAberta(host, porta)) return { host: host === '::1' ? '[::1]' : host, porta };
+    }
+  }
+  return null;
+}
+
 function nomeDoBanco(url) {
   return decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
 }
@@ -89,13 +112,32 @@ async function main() {
     env = lerEnv();
   }
 
-  const servidor = new Client({ connectionString: urlDoServidor(env.DATABASE_URL) });
+  let servidor = new Client({ connectionString: urlDoServidor(env.DATABASE_URL) });
   try {
-    await servidor.connect();
+    try {
+      await servidor.connect();
+    } catch (erro) {
+      if (erro.code !== 'ECONNREFUSED') throw erro;
+      // Conexão recusada: o PostgreSQL pode estar em outra porta (5433 quando há duas versões)
+      // ou atendendo só pelo IPv4 (127.0.0.1). Procura sozinho e corrige o .env.
+      const achado = await procurarPostgres();
+      if (!achado) throw erro;
+      for (const chave of ['DATABASE_URL', 'DATABASE_URL_TEST']) {
+        if (!env[chave]) continue;
+        const u = new URL(env[chave]);
+        u.hostname = achado.host;
+        u.port = String(achado.porta);
+        trocarNoEnv(chave, u.toString());
+      }
+      console.log(`PostgreSQL encontrado em ${achado.host}:${achado.porta}. Arquivo .env ajustado.`);
+      env = lerEnv();
+      servidor = new Client({ connectionString: urlDoServidor(env.DATABASE_URL) });
+      await servidor.connect();
+    }
   } catch (erro) {
     console.error('\nNão consegui conectar no PostgreSQL.');
     if (erro.code === '28P01') console.error('A senha está errada. Corrija DATABASE_URL e DATABASE_URL_TEST no arquivo backend\\.env.');
-    else if (erro.code === 'ECONNREFUSED') console.error('O PostgreSQL parece desligado. Abra "Serviços" do Windows e inicie o serviço postgresql.');
+    else if (erro.code === 'ECONNREFUSED') console.error('Procurei o PostgreSQL nas portas 5432 a 5435 e não achei. Confira em "Serviços" do Windows se o serviço postgresql está "Em execução".');
     else console.error(`Detalhe: ${erro.message}`);
     console.error('Para refazer a configuração do zero, apague o arquivo backend\\.env e rode o Iniciar de novo.');
     process.exit(1);
