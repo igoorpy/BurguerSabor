@@ -54,7 +54,7 @@ describe('Pedidos, KDS e pagamentos — /pedidos (RF05 a RF08, RF11, RNF03)', ()
         expect.objectContaining({ produtoId: 1, quantidade: 2, precoUnitario: 28.5, subtotal: 57, observacao: 'Sem cebola' }),
         expect.objectContaining({ produtoId: 2, quantidade: 1, precoUnitario: 6, subtotal: 6, observacao: null }),
       ]);
-      expect(res.body.pagamento).toEqual({ formaPagamento: 'PIX', statusPagamento: 'APROVADO', valorPago: 68 });
+      expect(res.body.pagamento).toEqual({ formaPagamento: 'PIX', statusPagamento: 'APROVADO', valorPago: 68, motivoReembolso: null });
       pedidoId = res.body.id;
     });
 

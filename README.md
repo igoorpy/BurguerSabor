@@ -57,7 +57,7 @@ Tudo que acontece no site (cadastro, pedido, baixa de estoque, avaliação) apar
 | Pasta | Conteúdo |
 |---|---|
 | [`docs/`](docs) | Requisitos e regras, modelagem do banco (DER, dicionário de dados, UML), casos de teste e o [checklist de entrega](docs/04-checklist-entrega.md) |
-| [`database/`](database) | `schema.sql` (tabelas, restrições e índices) e `seed.sql` (dados de teste) |
+| [`database/`](database) | `schema.sql` (tabelas, restrições e índices), `seed.sql` (dados de teste) e `migracoes.sql` (atualiza um banco existente sem apagar os dados; o Iniciar roda sozinho) |
 | [`backend/`](backend) | API REST em NestJS, site (`backend/public`), Swagger e testes — veja o [README do backend](backend/README.md) |
 
 ## Segurança

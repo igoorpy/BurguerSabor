@@ -4,7 +4,8 @@ export type TipoUsuario = 'CLIENTE' | 'ADMIN';
 export type UnidadeMedida = 'UN' | 'KG' | 'L' | 'G' | 'ML';
 export type StatusPedido = 'RECEBIDO' | 'PREPARANDO' | 'SAIU_ENTREGA' | 'CONCLUIDO' | 'CANCELADO';
 export type FormaPagamento = 'PIX' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'DINHEIRO';
-export type StatusPagamento = 'PENDENTE' | 'APROVADO' | 'RECUSADO';
+export type StatusPagamento = 'PENDENTE' | 'APROVADO' | 'RECUSADO' | 'REEMBOLSO_SOLICITADO' | 'REEMBOLSADO';
+export const STATUS_PAGAMENTO: StatusPagamento[] = ['PENDENTE', 'APROVADO', 'RECUSADO', 'REEMBOLSO_SOLICITADO', 'REEMBOLSADO'];
 export type TipoMovimentacao = 'ENTRADA' | 'SAIDA';
 export type MotivoMovimentacao = 'PEDIDO' | 'CANCELAMENTO' | 'REPOSICAO' | 'CADASTRO';
 
@@ -86,6 +87,8 @@ export interface Pagamento {
   formaPagamento: FormaPagamento;
   statusPagamento: StatusPagamento;
   valorPago: number;
+  /** Motivo escrito pelo cliente ao pedir reembolso (null se nunca pediu). */
+  motivoReembolso: string | null;
 }
 
 export interface Avaliacao {

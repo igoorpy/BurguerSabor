@@ -49,6 +49,25 @@ export function validarAvaliacao(status: StatusPedido, jaAvaliado: boolean): voi
   if (jaAvaliado) throw new ConflictError('Este pedido já foi avaliado');
 }
 
+/** Reembolso só de pedido entregue e pago, uma vez. */
+export function validarPedidoReembolso(statusPedido: StatusPedido, statusPagamento: StatusPagamento | null): void {
+  if (statusPedido !== 'CONCLUIDO') {
+    throw new BusinessRuleError('Só dá para pedir reembolso depois que o pedido for entregue', { statusAtual: statusPedido });
+  }
+  if (statusPagamento === 'REEMBOLSO_SOLICITADO') throw new ConflictError('O reembolso deste pedido já foi solicitado');
+  if (statusPagamento === 'REEMBOLSADO') throw new ConflictError('Este pedido já foi reembolsado');
+  if (statusPagamento !== 'APROVADO') {
+    throw new BusinessRuleError('Não há pagamento aprovado para reembolsar', { statusPagamento });
+  }
+}
+
+/** A loja só responde a um pedido de reembolso que está aguardando. */
+export function validarRespostaReembolso(statusPagamento: StatusPagamento | null): void {
+  if (statusPagamento !== 'REEMBOLSO_SOLICITADO') {
+    throw new BusinessRuleError('Não há pedido de reembolso aguardando resposta', { statusPagamento });
+  }
+}
+
 export interface LinhaValor {
   quantidade: number;
   precoUnitario: number;

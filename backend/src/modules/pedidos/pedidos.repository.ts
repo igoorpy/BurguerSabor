@@ -42,7 +42,8 @@ const SELECT_PEDIDO = `
          ), '[]'::json) AS itens,
          (
            SELECT json_build_object(
-                    'formaPagamento', pg.forma_pagamento, 'statusPagamento', pg.status_pagamento, 'valorPago', pg.valor_pago)
+                    'formaPagamento', pg.forma_pagamento, 'statusPagamento', pg.status_pagamento, 'valorPago', pg.valor_pago,
+                    'motivoReembolso', pg.motivo_reembolso)
            FROM pagamentos pg WHERE pg.pedido_id = p.id
          ) AS pagamento,
          (
@@ -142,6 +143,22 @@ export class PedidosRepository {
     );
   }
 
+  /** Situação do pagamento, com a linha travada para ninguém mudar ao mesmo tempo. */
+  async lockStatusPagamento(pedidoId: number, q: Queryable): Promise<StatusPagamento | null> {
+    const { rows } = await q.query<{ status_pagamento: StatusPagamento }>(
+      'SELECT status_pagamento FROM pagamentos WHERE pedido_id = $1 FOR UPDATE',
+      [pedidoId],
+    );
+    return rows[0]?.status_pagamento ?? null;
+  }
+
+  async solicitarReembolso(pedidoId: number, motivo: string, q: Queryable): Promise<void> {
+    await q.query(
+      `UPDATE pagamentos SET status_pagamento = 'REEMBOLSO_SOLICITADO', motivo_reembolso = $2 WHERE pedido_id = $1`,
+      [pedidoId, motivo],
+    );
+  }
+
   /** Avaliação 1:1 com o pedido (pedido_id é UNIQUE). */
   async insertAvaliacao(pedidoId: number, nota: number, comentario: string | null, q: Queryable): Promise<void> {
     await q.query('INSERT INTO avaliacoes (pedido_id, nota, comentario) VALUES ($1, $2, $3)', [pedidoId, nota, comentario]);
@@ -152,15 +169,16 @@ export class PedidosRepository {
     return rows.length > 0;
   }
 
-  /** Relatório de saída: quanto de cada produto foi vendido (pedidos não cancelados). */
+  /** Relatório de saída: quanto de cada produto foi vendido (pedidos não cancelados). Pedido reembolsado conta na saída, mas não no faturamento. */
   async saidaProdutos(de?: string, ate?: string): Promise<SaidaProduto[]> {
     const { rows } = await this.db.query<{ produto_id: number; nome: string; quantidade: string; faturamento: string }>(
       `SELECT pr.id AS produto_id, pr.nome,
               SUM(ip.quantidade) AS quantidade,
-              SUM(ip.quantidade * ip.preco_unitario) AS faturamento
+              SUM(CASE WHEN pg.status_pagamento = 'REEMBOLSADO' THEN 0 ELSE ip.quantidade * ip.preco_unitario END) AS faturamento
        FROM itens_pedido ip
        JOIN pedidos p ON p.id = ip.pedido_id
        JOIN produtos pr ON pr.id = ip.produto_id
+       LEFT JOIN pagamentos pg ON pg.pedido_id = p.id
        WHERE p.status <> 'CANCELADO'
          AND ($1::date IS NULL OR p.criado_em >= $1::date)
          AND ($2::date IS NULL OR p.criado_em < $2::date + 1)

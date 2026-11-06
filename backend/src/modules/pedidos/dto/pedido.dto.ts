@@ -4,14 +4,17 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   Max,
   Min,
+  MinLength,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -20,6 +23,7 @@ import {
   FORMAS_PAGAMENTO,
   FormaPagamento,
   Pedido,
+  STATUS_PAGAMENTO,
   STATUS_PEDIDO,
   StatusPagamento,
   StatusPedido,
@@ -54,6 +58,18 @@ export class CreatePedidoDto {
   @IsArray() @ArrayMinSize(1, { message: 'o pedido precisa de ao menos 1 item' }) @ArrayMaxSize(30)
   @ValidateNested({ each: true }) @Type(() => ItemPedidoDto)
   itens: ItemPedidoDto[];
+}
+
+export class SolicitarReembolsoDto {
+  @ApiProperty({ example: 'O lanche chegou frio e amassado', minLength: 5, maxLength: 300 })
+  @IsString() @IsNotEmpty() @MinLength(5, { message: 'Conte em poucas palavras o motivo (pelo menos 5 letras)' }) @MaxLength(300)
+  motivo: string;
+}
+
+export class ResponderReembolsoDto {
+  @ApiProperty({ example: true, description: 'true aprova o reembolso; false recusa' })
+  @IsBoolean()
+  aprovar: boolean;
 }
 
 export class AvaliarPedidoDto {
@@ -100,8 +116,9 @@ class ItemPedidoResponseDto {
 
 class PagamentoResponseDto {
   @ApiProperty({ enum: FORMAS_PAGAMENTO, example: 'PIX' }) formaPagamento: FormaPagamento;
-  @ApiProperty({ enum: ['PENDENTE', 'APROVADO', 'RECUSADO'], example: 'APROVADO' }) statusPagamento: StatusPagamento;
+  @ApiProperty({ enum: STATUS_PAGAMENTO, example: 'APROVADO' }) statusPagamento: StatusPagamento;
   @ApiProperty({ example: 62 }) valorPago: number;
+  @ApiProperty({ example: null, nullable: true, description: 'Motivo do pedido de reembolso, se houver' }) motivoReembolso: string | null;
 }
 
 class AvaliacaoResponseDto {

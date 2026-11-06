@@ -20,7 +20,7 @@ describe('Estoque — /insumos, /movimentacoes e /alertas', () => {
   describe('CRUD de insumos', () => {
     it('GET 200: lista com o contrato do DTO', async () => {
       const res = await api().get('/insumos').set(bearer(admin)).expect(200);
-      expect(res.body.length).toBe(9);
+      expect(res.body.length).toBe(21);
       res.body.forEach((i: unknown) => expect(i).toEqual(contratoInsumo));
     });
 

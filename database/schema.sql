@@ -107,8 +107,9 @@ CREATE TABLE pagamentos (
     id SERIAL PRIMARY KEY,
     pedido_id INT NOT NULL UNIQUE REFERENCES pedidos(id) ON DELETE CASCADE,
     forma_pagamento VARCHAR(30) NOT NULL CHECK (forma_pagamento IN ('PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'DINHEIRO')),
-    status_pagamento VARCHAR(30) NOT NULL DEFAULT 'PENDENTE' CHECK (status_pagamento IN ('PENDENTE', 'APROVADO', 'RECUSADO')),
+    status_pagamento VARCHAR(30) NOT NULL DEFAULT 'PENDENTE' CHECK (status_pagamento IN ('PENDENTE', 'APROVADO', 'RECUSADO', 'REEMBOLSO_SOLICITADO', 'REEMBOLSADO')),
     valor_pago DECIMAL(10,2) NOT NULL CHECK (valor_pago > 0),
+    motivo_reembolso VARCHAR(300), -- preenchido quando o cliente pede reembolso de um pedido entregue
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

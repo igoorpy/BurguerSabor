@@ -19,9 +19,9 @@ describe('Categorias — CRUD /categorias (RF03 / RN03)', () => {
 
   it('GET 200: público, ordenado por ordem de exibição', async () => {
     const res = await api().get('/categorias').expect(200);
-    expect(res.body.length).toBe(4);
+    expect(res.body.length).toBe(6);
     res.body.forEach((c: unknown) => expect(c).toEqual(contratoCategoria));
-    expect(res.body.map((c: { nome: string }) => c.nome)).toEqual(['Hambúrgueres', 'Bebidas', 'Acompanhamentos', 'Pizzas']);
+    expect(res.body.map((c: { nome: string }) => c.nome)).toEqual(['Combos', 'Hambúrgueres', 'Bebidas', 'Acompanhamentos', 'Pizzas', 'Sobremesas']);
   });
 
   it('GET /:id 200 e 404', async () => {
@@ -35,8 +35,8 @@ describe('Categorias — CRUD /categorias (RF03 / RN03)', () => {
   });
 
   it('POST 201: admin cria categoria', async () => {
-    const res = await api().post('/categorias').set(bearer(admin)).send({ nome: 'Sobremesas', ordemExibicao: 5 }).expect(201);
-    expect(res.body).toEqual({ id: expect.any(Number), nome: 'Sobremesas', ordemExibicao: 5, ativo: true });
+    const res = await api().post('/categorias').set(bearer(admin)).send({ nome: 'Saladas', ordemExibicao: 7 }).expect(201);
+    expect(res.body).toEqual({ id: expect.any(Number), nome: 'Saladas', ordemExibicao: 7, ativo: true });
     criadaId = res.body.id;
   });
 

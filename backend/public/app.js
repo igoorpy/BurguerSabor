@@ -31,7 +31,8 @@ const DETALHE_ETAPA = {
   SAIU_ENTREGA: 'O entregador está a caminho.',
   CONCLUIDO: 'Pedido entregue no seu endereço.',
 };
-const NOME_PAGAMENTO = { APROVADO: 'Pago', PENDENTE: 'A pagar na entrega', RECUSADO: 'Estornado' };
+const NOME_PAGAMENTO = { APROVADO: 'Pago', PENDENTE: 'A pagar na entrega', RECUSADO: 'Estornado', REEMBOLSO_SOLICITADO: 'Reembolso solicitado', REEMBOLSADO: 'Reembolsado' };
+const ICONE_LIXEIRA = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 const FOTO_PADRAO = '/img/sem-foto.svg';
 
 const guardar = (chave, valor) => {
@@ -46,6 +47,8 @@ const estado = {
   sacola: ler('bs-sacola', []), // [{ chave, produtoId, nome, preco, imagemUrl, quantidade, observacao }]
   loja: null, // { nome, taxaEntrega, tempoEntregaMin, tempoEntregaMax, notaMedia, totalAvaliacoes }
 };
+// Sem ninguém logado, não sobra sacola de uma sessão anterior
+if (!estado.sessao) estado.sacola = [];
 
 let timerTela; // atualização automática da tela atual (pedido ao vivo, fila da cozinha)
 
@@ -106,6 +109,9 @@ function salvarSacola() {
 function sair(irParaInicio = true) {
   estado.sessao = null;
   guardar('bs-sessao', null);
+  // A sacola é de quem está logado: ao sair, ela é esvaziada
+  estado.sacola = [];
+  guardar('bs-sacola', []);
   desenharMenu();
   if (irParaInicio) location.hash = '#/';
 }
@@ -121,6 +127,7 @@ function abrirDialogo(conteudo, { botaoFechar = true } = {}) {
 // ---------- Menu e barra da sacola ----------
 
 function totaisSacola() {
+  if (!ehCliente()) return { subtotal: 0, itens: 0, total: 0 };
   const subtotal = estado.sacola.reduce((s, i) => s + Math.round(i.preco * 100) * i.quantidade, 0) / 100;
   const itens = estado.sacola.reduce((s, i) => s + i.quantidade, 0);
   return { subtotal, itens, total: subtotal ? Math.round((subtotal + taxa()) * 100) / 100 : 0 };
@@ -280,6 +287,13 @@ function abrirProduto(p) {
   $('[data-mais]', d).addEventListener('click', () => { qtd = Math.min(50, qtd + 1); atualizar(); });
   $('#form-produto', d).addEventListener('submit', (e) => {
     e.preventDefault();
+    if (!estado.sessao) {
+      d.close();
+      avisar('Entre na sua conta para montar a sacola.');
+      location.hash = '#/entrar';
+      return;
+    }
+    if (ehAdmin()) { d.close(); avisar('Pedidos são feitos com uma conta de cliente.', true); return; }
     const observacao = $('#obs', d).value.trim();
     const chave = `${p.id}|${observacao}`;
     const existente = estado.sacola.find((i) => i.chave === chave);
@@ -305,7 +319,7 @@ function htmlSacola(editavel = true) {
         <strong>${editavel ? '' : `${i.quantidade}× `}${esc(i.nome)}</strong><span>${reais(i.preco * i.quantidade)}</span>
         ${i.observacao ? `<span class="obs">Obs.: ${esc(i.observacao)}</span>` : ''}
         ${editavel ? `<div class="linha-acoes">
-          <button type="button" class="remover" data-remover="${esc(i.chave)}">Remover</button>
+          <button type="button" class="remover" data-remover="${esc(i.chave)}" aria-label="Tirar ${esc(i.nome)} da sacola" title="Tirar da sacola">${ICONE_LIXEIRA}<span>Remover</span></button>
           <div class="stepper"><button type="button" data-menos="${esc(i.chave)}" aria-label="Tirar um ${esc(i.nome)}">−</button><span>${i.quantidade}</span><button type="button" data-mais="${esc(i.chave)}" aria-label="Pôr mais um ${esc(i.nome)}">+</button></div>
         </div>` : ''}
       </li>`)
@@ -465,6 +479,16 @@ async function telaPedido(id) {
           <div class="erro-form" id="erro-avaliacao"></div>
           <button class="botao" type="submit">Enviar avaliação</button></form>`;
 
+  const pg = p.pagamento;
+  const reembolso = p.status !== 'CONCLUIDO' || !pg ? ''
+    : pg.statusPagamento === 'REEMBOLSADO'
+      ? `<div class="painel aviso-reembolso ok"><h2>Reembolso aprovado</h2><p>A loja aprovou o reembolso de <strong>${reais(pg.valorPago)}</strong> (pagamento simulado).</p>${pg.motivoReembolso ? `<p><small>Motivo: ${esc(pg.motivoReembolso)}</small></p>` : ''}</div>`
+      : pg.statusPagamento === 'REEMBOLSO_SOLICITADO'
+        ? `<div class="painel aviso-reembolso"><h2>Reembolso solicitado</h2><p>A loja vai analisar o seu pedido de reembolso. Esta tela atualiza sozinha.</p><p><small>Motivo: ${esc(pg.motivoReembolso || '')}</small></p></div>`
+        : pg.statusPagamento === 'APROVADO'
+          ? `<div class="painel"><h2>Algum problema com o pedido?</h2><p>${pg.motivoReembolso ? 'A loja recusou o pedido anterior, mas você pode explicar melhor e pedir de novo.' : 'Se algo deu errado, você pode pedir o reembolso do valor pago.'}</p><button class="botao secundario pequeno" type="button" id="pedir-reembolso">Pedir reembolso</button></div>`
+          : '';
+
   main().innerHTML = `
     <div class="acompanhar">
       <div>
@@ -477,6 +501,7 @@ async function telaPedido(id) {
           ${p.status === 'RECEBIDO' ? `<button class="botao perigo pequeno" type="button" id="cancelar">Cancelar pedido</button>` : ''}
         </section>
         ${avaliacao}
+        ${reembolso}
       </div>
       <aside class="painel">
         <h2>Pedido ${p.id}</h2>
@@ -500,6 +525,25 @@ async function telaPedido(id) {
     } catch (err) { avisar(err.message, true); }
   });
 
+  $('#pedir-reembolso')?.addEventListener('click', () => {
+    const d = abrirDialogo(`<form id="form-reembolso" novalidate><h2>Pedir reembolso</h2>
+      <p>Pedido ${p.id} · ${reais(pg.valorPago)}. Conte o que aconteceu; a loja vai analisar.</p>
+      <div class="erro-form" id="erro-dialogo"></div>
+      <div class="campo"><label for="motivo">Motivo</label><textarea id="motivo" maxlength="300" required placeholder="Ex.: o lanche chegou frio"></textarea></div>
+      <button class="botao" type="submit">Enviar pedido de reembolso</button></form>`);
+    $('#form-reembolso', d).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const motivo = $('#motivo', d).value.trim();
+      if (motivo.length < 5) { $('#erro-dialogo', d).textContent = 'Conte em poucas palavras o motivo (pelo menos 5 letras).'; return; }
+      try {
+        await api(`/pedidos/${p.id}/reembolso`, { metodo: 'POST', corpo: { motivo } });
+        d.close();
+        avisar('Pedido de reembolso enviado para a loja.');
+        telaPedido(id);
+      } catch (err) { $('#erro-dialogo', d).textContent = err.message; }
+    });
+  });
+
   const form = $('#form-avaliacao');
   if (form) {
     let nota = 0;
@@ -520,11 +564,17 @@ async function telaPedido(id) {
   }
 
   // Status ao vivo: busca o pedido de novo a cada 5 s e redesenha só se o status mudou
-  if (emAndamento) {
+  const aguardandoReembolso = pg?.statusPagamento === 'REEMBOLSO_SOLICITADO';
+  if (emAndamento || aguardandoReembolso) {
     timerTela = setInterval(async () => {
       try {
         const novo = await api(`/pedidos/${id}`);
         if (novo.status !== p.status) { clearInterval(timerTela); avisar(FRASE_STATUS[novo.status]); telaPedido(id); }
+        else if (novo.pagamento?.statusPagamento !== pg?.statusPagamento) {
+          clearInterval(timerTela);
+          avisar(novo.pagamento?.statusPagamento === 'REEMBOLSADO' ? 'A loja aprovou o seu reembolso.' : 'A loja respondeu o seu pedido de reembolso.');
+          telaPedido(id);
+        }
       } catch { /* tenta de novo no próximo ciclo */ }
     }, 5000);
   }
@@ -651,6 +701,7 @@ function htmlPedidoAdmin(p, acoes) {
       ${etapas}
       <ul>${p.itens.map((i) => `<li>${i.quantidade}× ${esc(i.produtoNome)}${i.observacao ? ` <small>(${esc(i.observacao)})</small>` : ''}</li>`).join('')}</ul>
       <p><strong>${reais(p.valorTotal)}</strong> · ${NOME_FORMA[p.pagamento?.formaPagamento] ?? ''} · ${NOME_PAGAMENTO[p.pagamento?.statusPagamento] ?? ''}${p.avaliacao ? ` · <span class="estrelas-fixas" style="font-size:1rem">${estrelas(p.avaliacao.nota)}</span>` : ''}</p>
+      ${p.pagamento?.statusPagamento === 'REEMBOLSO_SOLICITADO' ? `<p class="aviso-reembolso"><strong>O cliente pediu reembolso:</strong> “${esc(p.pagamento.motivoReembolso || '')}”</p>` : ''}
       ${acoes ? `<div class="acoes">${acoes}</div>` : ''}
     </article>`;
 }
@@ -661,7 +712,7 @@ async function telaAdminPedidos() {
   const statusFiltro = new URLSearchParams(location.hash.split('?')[1] || '').get('status') || '';
   const pedidos = await api(`/pedidos${statusFiltro ? `?status=${statusFiltro}` : ''}`);
   const proximo = { RECEBIDO: 'PREPARANDO', PREPARANDO: 'SAIU_ENTREGA', SAIU_ENTREGA: 'CONCLUIDO' };
-  const assinatura = JSON.stringify(pedidos.map((p) => [p.id, p.status]));
+  const assinatura = JSON.stringify(pedidos.map((p) => [p.id, p.status, p.pagamento?.statusPagamento]));
   main().innerHTML = `${html}
     <div class="cabecalho"><h1>Pedidos</h1>
       <div class="inline"><span class="ao-vivo">Ao vivo</span><label for="filtro-status">Mostrar</label>
@@ -675,6 +726,9 @@ async function telaAdminPedidos() {
     ${pedidos.length ? pedidos.map((p) => htmlPedidoAdmin(p,
       (proximo[p.status] ? `<button class="botao pequeno" type="button" data-avancar="${p.id}" data-para="${proximo[p.status]}">Marcar como ${NOME_STATUS[proximo[p.status]].toLowerCase()}</button>` : '') +
       (['RECEBIDO', 'PREPARANDO'].includes(p.status) ? `<button class="botao perigo pequeno" type="button" data-cancelar="${p.id}">Cancelar</button>` : '') +
+      (p.pagamento?.statusPagamento === 'REEMBOLSO_SOLICITADO'
+        ? `<button class="botao pequeno" type="button" data-reembolso="${p.id}" data-aprovar="sim">Aprovar reembolso</button><button class="botao perigo pequeno" type="button" data-reembolso="${p.id}" data-aprovar="nao">Recusar reembolso</button>`
+        : '') +
       `<button class="botao secundario pequeno" type="button" data-baixas="${p.id}">Ver baixas no estoque</button>`,
     )).join('') : '<div class="painel"><p class="vazio">Nenhum pedido por aqui ainda. Os novos aparecem sozinhos.</p></div>'}
     </div>`;
@@ -687,6 +741,12 @@ async function telaAdminPedidos() {
       if (b.dataset.avancar) {
         await api(`/pedidos/${b.dataset.avancar}/status`, { metodo: 'PATCH', corpo: { status: b.dataset.para } });
         avisar(`Pedido ${b.dataset.avancar}: ${NOME_STATUS[b.dataset.para].toLowerCase()}.`);
+        recarregar();
+      } else if (b.dataset.reembolso) {
+        const aprovar = b.dataset.aprovar === 'sim';
+        if (!confirm(`${aprovar ? 'Aprovar' : 'Recusar'} o reembolso do pedido ${b.dataset.reembolso}?${aprovar ? ' O estoque não volta, porque o pedido já foi entregue.' : ''}`)) return;
+        await api(`/pedidos/${b.dataset.reembolso}/reembolso`, { metodo: 'PATCH', corpo: { aprovar } });
+        avisar(aprovar ? `Reembolso do pedido ${b.dataset.reembolso} aprovado.` : `Reembolso do pedido ${b.dataset.reembolso} recusado.`);
         recarregar();
       } else if (b.dataset.cancelar) {
         if (!confirm(`Cancelar o pedido ${b.dataset.cancelar}? Os ingredientes voltam ao estoque.`)) return;
@@ -707,7 +767,7 @@ async function telaAdminPedidos() {
   timerTela = setInterval(async () => {
     try {
       const agora = await api(`/pedidos${statusFiltro ? `?status=${statusFiltro}` : ''}`);
-      if (JSON.stringify(agora.map((p) => [p.id, p.status])) !== assinatura) {
+      if (JSON.stringify(agora.map((p) => [p.id, p.status, p.pagamento?.statusPagamento])) !== assinatura) {
         if (agora.length > pedidos.length) avisar('Chegou pedido novo!');
         recarregar();
       }

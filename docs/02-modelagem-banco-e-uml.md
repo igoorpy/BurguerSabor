@@ -96,6 +96,7 @@ erDiagram
         string forma_pagamento
         string status_pagamento
         decimal valor_pago
+        string motivo_reembolso
         timestamp criado_em
     }
     movimentacoes_estoque {
@@ -222,8 +223,9 @@ quantidades); toda FK tem comportamento explícito de exclusão (RNF02).
 | id | SERIAL | PK | Identificador |
 | pedido_id | INT | NOT NULL, UNIQUE, FK → pedidos ON DELETE CASCADE | UNIQUE garante 1 pagamento por pedido |
 | forma_pagamento | VARCHAR(30) | NOT NULL, CHECK em (PIX, CARTAO_CREDITO, CARTAO_DEBITO, DINHEIRO) | Forma escolhida |
-| status_pagamento | VARCHAR(30) | NOT NULL, DEFAULT PENDENTE, CHECK em (PENDENTE, APROVADO, RECUSADO) | Simulado: Pix/cartão aprovados na hora; dinheiro na entrega; cancelado = RECUSADO |
+| status_pagamento | VARCHAR(30) | NOT NULL, DEFAULT PENDENTE, CHECK em (PENDENTE, APROVADO, RECUSADO, REEMBOLSO_SOLICITADO, REEMBOLSADO) | Simulado: Pix/cartão aprovados na hora; dinheiro na entrega; cancelado = RECUSADO (estornado); pedido entregue pode ter reembolso solicitado e aprovado |
 | valor_pago | DECIMAL(10,2) | NOT NULL, CHECK > 0 | Valor do pedido |
+| motivo_reembolso | VARCHAR(300) | opcional | O que o cliente escreveu ao pedir reembolso |
 | criado_em | TIMESTAMP | DEFAULT agora | Momento do pagamento |
 
 ### movimentacoes_estoque — extrato de entradas e saídas

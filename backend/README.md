@@ -51,8 +51,8 @@ npm run start:dev
 
 A pasta `public/` tem um site em HTML, CSS e JavaScript puro, servido pela própria API (sem etapa de build):
 
-- **Cliente (estilo app de delivery):** capa da loja com nota, tempo e taxa de entrega; cardápio por categoria com fotos e busca; detalhe do produto com observação; sacola; cadastro e login; endereços; forma de pagamento (Pix, cartão de crédito, cartão de débito ou dinheiro); acompanhamento do pedido que atualiza sozinho, com previsão de entrega; e avaliação com estrelas depois da entrega.
-- **Admin:** fila de pedidos ao vivo com avanço de status e cancelamento, avaliações dos clientes, foto no cadastro de produto, cadastro de produtos e categorias, receita (ficha técnica) e custo/lucro, estoque com reposição, extrato e alertas, e relatório de saída de produtos.
+- **Cliente (estilo app de delivery):** capa da loja com nota, tempo e taxa de entrega; cardápio com 21 itens em 6 categorias, incluindo combos, com fotos e busca; detalhe do produto com observação; sacola (com lixeira em cada item; só para quem está logado e esvaziada ao sair); cadastro e login; endereços; forma de pagamento (Pix, cartão de crédito, cartão de débito ou dinheiro); acompanhamento do pedido que atualiza sozinho, com previsão de entrega; avaliação com estrelas e pedido de reembolso depois da entrega.
+- **Admin:** fila de pedidos ao vivo com avanço de status, cancelamento e resposta aos pedidos de reembolso, avaliações dos clientes, foto no cadastro de produto, cadastro de produtos e categorias, receita (ficha técnica) e custo/lucro, estoque com reposição, extrato e alertas, e relatório de saída de produtos.
 
 ### Contas de teste (senhas fictícias)
 
@@ -83,6 +83,7 @@ início de cada arquivo de teste. Nunca aponte `DATABASE_URL_TEST` para o banco 
 | `test/e2e/enderecos.e2e.spec.ts` | Endereços do cliente (1:N) e isolamento entre clientes |
 | `test/e2e/pedidos.e2e.spec.ts` | Pedido atômico, baixa de estoque, CT-EST-001, CT-KDS-006, CT-MOB-005, cancelamento e relatório |
 | `test/e2e/loja.e2e.spec.ts` | Dados da loja, avaliação do pedido (só depois de entregue, uma vez) e foto do produto |
+| `test/e2e/reembolso.e2e.spec.ts` | Reembolso: só depois de entregue, motivo obrigatório, aprovar ou recusar, estoque não volta |
 | `test/e2e/swagger.e2e.spec.ts` | Swagger no ar, rotas e schemas documentados (CT-SWG-007) |
 
 Cada teste confere o **status HTTP** e o **formato do JSON** devolvido (contratos em `test/helpers.ts`).
@@ -118,6 +119,8 @@ Legenda: 🌐 pública · 👤 cliente · 🛠 admin · 🔑 qualquer usuário l
 | POST | `/pedidos/:id/cancelamento` | 🔑 | Cancela e devolve os insumos |
 | GET | `/relatorios/saida-produtos` | 🛠 | Saída de produtos e faturamento (`?de=&ate=`) |
 | POST | `/pedidos/:id/avaliacao` | 👤 | Avalia o pedido entregue (nota de 1 a 5, uma vez) |
+| POST | `/pedidos/:id/reembolso` | 👤 | Pede reembolso de pedido entregue e pago, com motivo (o estoque não volta) |
+| PATCH | `/pedidos/:id/reembolso` | 🛠 | Aprova (`REEMBOLSADO`) ou recusa (volta a `APROVADO`) o pedido de reembolso |
 | GET | `/loja` | 🌐 | Taxa e tempo de entrega e nota média da loja |
 | GET | `/avaliacoes` | 🛠 | Avaliações dos clientes |
 

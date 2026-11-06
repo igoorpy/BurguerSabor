@@ -8,7 +8,9 @@ import {
   ListPedidosQueryDto,
   PedidoResponseDto,
   RelatorioQueryDto,
+  ResponderReembolsoDto,
   SaidaProdutoResponseDto,
+  SolicitarReembolsoDto,
   UpdateStatusDto,
 } from './dto/pedido.dto';
 import { PedidosService } from './pedidos.service';
@@ -73,6 +75,36 @@ export class PedidosController {
     @Body() dto: AvaliarPedidoDto,
   ): Promise<PedidoResponseDto> {
     return PedidoResponseDto.from(await this.service.avaliar(user, id, dto));
+  }
+
+  @Roles('CLIENTE')
+  @Post(':id/reembolso')
+  @ApiOperation({ summary: 'O cliente pede reembolso de um pedido entregue e pago (o estoque não volta)' })
+  @ApiResponse({ status: 201, type: PedidoResponseDto })
+  @ApiResponse({ status: 404, type: ErroResponseDto })
+  @ApiResponse({ status: 409, description: 'Reembolso já solicitado ou já feito', type: ErroResponseDto })
+  @ApiResponse({ status: 422, description: 'Pedido não entregue, pagamento não aprovado ou motivo inválido', type: ErroResponseDto })
+  async solicitarReembolso(
+    @CurrentUser() user: UsuarioAutenticado,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SolicitarReembolsoDto,
+  ): Promise<PedidoResponseDto> {
+    return PedidoResponseDto.from(await this.service.solicitarReembolso(user, id, dto));
+  }
+
+  @Roles('ADMIN')
+  @Patch(':id/reembolso')
+  @ApiOperation({ summary: 'A loja aprova ou recusa o pedido de reembolso (admin)' })
+  @ApiResponse({ status: 200, type: PedidoResponseDto })
+  @ApiResponse({ status: 403, type: ErroResponseDto })
+  @ApiResponse({ status: 404, type: ErroResponseDto })
+  @ApiResponse({ status: 422, description: 'Não há pedido de reembolso aguardando', type: ErroResponseDto })
+  async responderReembolso(
+    @CurrentUser() user: UsuarioAutenticado,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ResponderReembolsoDto,
+  ): Promise<PedidoResponseDto> {
+    return PedidoResponseDto.from(await this.service.responderReembolso(user, id, dto));
   }
 
   @Post(':id/cancelamento')

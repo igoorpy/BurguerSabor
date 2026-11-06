@@ -21,13 +21,18 @@ describe('Produtos, ficha técnica e custo — /produtos (RF03 / RF04 / RF10 / R
   describe('Catálogo', () => {
     it('CT-SWG-007 / GET 200: catálogo público com o contrato do DTO', async () => {
       const res = await api().get('/produtos').expect(200);
-      expect(res.body.length).toBe(5);
+      expect(res.body.length).toBe(21);
       res.body.forEach((p: unknown) => expect(p).toEqual(expect.objectContaining(contratoProduto)));
     });
 
     it('CT-MOB-004: busca "Cheddar" devolve só produtos com o termo', async () => {
       const res = await api().get('/produtos').query({ busca: 'Cheddar' }).expect(200);
-      expect(res.body.map((p: { nome: string }) => p.nome).sort()).toEqual(['Burguer X-Bacon', 'Burguer X-Cheddar']);
+      const nomes = res.body.map((p: { nome: string }) => p.nome);
+      expect(nomes).toEqual(expect.arrayContaining(['Burguer X-Bacon', 'Burguer X-Cheddar', 'Combo X-Cheddar']));
+      res.body.forEach((p: { nome: string; descricao: string | null }) =>
+        expect(`${p.nome} ${p.descricao ?? ''}`.toLowerCase()).toContain('cheddar'),
+      );
+      expect(nomes).not.toContain('Pizza Calabresa');
     });
 
     it('busca sem resultados devolve lista vazia', async () => {
@@ -36,8 +41,8 @@ describe('Produtos, ficha técnica e custo — /produtos (RF03 / RF04 / RF10 / R
 
     it('filtra por categoria (barra de opções do app)', async () => {
       const res = await api().get('/produtos?categoriaId=2').expect(200);
-      expect(res.body).toHaveLength(1);
-      expect(res.body[0].categoriaNome).toBe('Bebidas');
+      expect(res.body).toHaveLength(4);
+      res.body.forEach((p: { categoriaNome: string }) => expect(p.categoriaNome).toBe('Bebidas'));
     });
 
     it('422: filtro inválido', async () => {

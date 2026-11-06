@@ -38,6 +38,7 @@ describe('CT-SWG-007 — documentação Swagger / OpenAPI (RNF04)', () => {
         '/loja',
         '/avaliacoes',
         '/pedidos/{id}/avaliacao',
+        '/pedidos/{id}/reembolso',
       ]),
     );
     expect(Object.keys(body.paths['/produtos/{id}'])).toEqual(expect.arrayContaining(['get', 'patch', 'delete']));

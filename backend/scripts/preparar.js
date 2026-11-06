@@ -163,10 +163,15 @@ async function main() {
     'SELECT COUNT(*)::int AS existentes FROM unnest($1::text[]) AS t(nome) WHERE to_regclass($2 || t.nome) IS NOT NULL',
     [tabelas, 'public.'],
   );
-  await banco.end();
   if (rows[0].existentes < tabelas.length) {
+    await banco.end();
     await resetDatabase(env.DATABASE_URL);
     console.log('Tabelas e dados de exemplo criados.');
+  } else {
+    // Banco já existe: aplica as atualizações novas sem apagar os dados
+    const migracoes = fs.readFileSync(path.join(raiz, '..', 'database', 'migracoes.sql'), 'utf8');
+    await banco.query(migracoes);
+    await banco.end();
   }
   console.log('Banco de dados pronto.');
 }

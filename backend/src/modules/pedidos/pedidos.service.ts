@@ -5,12 +5,20 @@ import { BusinessRuleError, NotFoundError } from '../../common/errors';
 import { DatabaseService } from '../../database/database.service';
 import { Pedido, StatusPedido } from '../../domain/entities';
 import { calcularNecessidade, verificarFaltas } from '../../domain/estoque.rules';
-import { calcularTotais, statusInicialPagamento, validarAvaliacao, validarCancelamento, validarTransicao } from '../../domain/pedido.rules';
+import {
+  calcularTotais,
+  statusInicialPagamento,
+  validarAvaliacao,
+  validarCancelamento,
+  validarPedidoReembolso,
+  validarRespostaReembolso,
+  validarTransicao,
+} from '../../domain/pedido.rules';
 import { EnderecosRepository } from '../enderecos/enderecos.repository';
 import { EstoqueService } from '../insumos/estoque.service';
 import { InsumosRepository } from '../insumos/insumos.repository';
 import { ProdutosRepository } from '../produtos/produtos.repository';
-import { AvaliarPedidoDto, CreatePedidoDto } from './dto/pedido.dto';
+import { AvaliarPedidoDto, CreatePedidoDto, ResponderReembolsoDto, SolicitarReembolsoDto } from './dto/pedido.dto';
 import { PedidosRepository, SaidaProduto } from './pedidos.repository';
 
 @Injectable()
@@ -144,6 +152,31 @@ export class PedidosService {
       await this.repo.insertAvaliacao(id, dto.nota, dto.comentario?.trim() || null, tx);
     });
     return this.buscar(cliente, id);
+  }
+
+  /**
+   * O cliente pede reembolso de um pedido já entregue e pago.
+   * O estoque não volta: o lanche já foi preparado e entregue.
+   */
+  async solicitarReembolso(cliente: UsuarioAutenticado, id: number, dto: SolicitarReembolsoDto): Promise<Pedido> {
+    await this.db.transaction(async (tx) => {
+      const pedido = await this.repo.lockById(id, tx);
+      if (!pedido || pedido.clienteId !== cliente.id) throw new NotFoundError(`Pedido ${id} não encontrado`);
+      validarPedidoReembolso(pedido.status, await this.repo.lockStatusPagamento(id, tx));
+      await this.repo.solicitarReembolso(id, dto.motivo.trim(), tx);
+    });
+    return this.buscar(cliente, id);
+  }
+
+  /** A loja aprova (vira REEMBOLSADO) ou recusa (o pagamento volta a APROVADO). O motivo fica guardado. */
+  async responderReembolso(admin: UsuarioAutenticado, id: number, dto: ResponderReembolsoDto): Promise<Pedido> {
+    await this.db.transaction(async (tx) => {
+      const pedido = await this.repo.lockById(id, tx);
+      if (!pedido) throw new NotFoundError(`Pedido ${id} não encontrado`);
+      validarRespostaReembolso(await this.repo.lockStatusPagamento(id, tx));
+      await this.repo.updateStatusPagamento(id, ['REEMBOLSO_SOLICITADO'], dto.aprovar ? 'REEMBOLSADO' : 'APROVADO', tx);
+    });
+    return this.buscar(admin, id);
   }
 
   saidaProdutos(de?: string, ate?: string): Promise<SaidaProduto[]> {
