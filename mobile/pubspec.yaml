@@ -1,0 +1,24 @@
+name: burguer_sabor_app
+description: "App mobile do Burguer & Sabor: cardápio, sacola, pedidos e gestão da loja (projeto de apresentação)."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Banco de dados SQLite dentro do celular
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  # Para guardar a senha embaralhada (hash), nunca em texto
+  crypto: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

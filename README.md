@@ -2,7 +2,20 @@
 
 Sistema de pedidos e controle de estoque para lanchonetes — **projeto de apresentação** (pagamentos simulados, contas de teste fictícias).
 
-O cliente faz o pedido pelo site; o sistema desconta os ingredientes do estoque pela receita (ficha técnica) e avisa o administrador do que está acabando.
+O projeto tem duas partes:
+
+- **Site de delivery** (NestJS + PostgreSQL): o cliente faz o pedido pelo site; o sistema desconta os ingredientes do estoque pela receita (ficha técnica) e avisa o administrador do que está acabando.
+- **App de delivery para Android** (Dart + Flutter, pasta [`mobile/`](mobile)): boas-vindas e login, barra de opções com busca e CRUD de produtos e categorias, com o banco SQLite dentro do próprio celular.
+
+## Links rápidos
+
+| O quê | Onde |
+|---|---|
+| Site (com o Iniciar aberto) | <http://localhost:3000> |
+| Back-end: Swagger para testar a API | <http://localhost:3000/api-docs> |
+| Código do back-end | [`backend/`](backend) |
+| Código do app | [`mobile/`](mobile) |
+| Documentação em PDF | [`docs/pdf/`](docs/pdf) |
 
 ## Como rodar no Windows (dois cliques)
 
@@ -52,6 +65,28 @@ WHERE quantidade_disponivel <= estoque_minimo;
 
 Tudo que acontece no site (cadastro, pedido, baixa de estoque, avaliação) aparece nessas tabelas na hora. O banco `burguer_sabor_test` é só dos testes automatizados e é apagado a cada execução.
 
+## App Android (Flutter)
+
+O app fica na pasta [`mobile/`](mobile) e roda no celular pelo cabo USB, sem emulador. Resumo:
+
+1. Instale o Flutter (canal `stable`) e ligue a **Depuração USB** no celular.
+2. Na pasta `mobile`, dê dois cliques em **`Preparar projeto.bat`** (só na primeira vez).
+3. Dê dois cliques em **`Rodar no celular.bat`**.
+
+As contas de teste são as mesmas do site. O passo a passo completo está no [README do app](mobile/README.md) e no PDF [O app parte por parte](docs/pdf/BurguerSabor%20-%20O%20app%20parte%20por%20parte.pdf).
+
+## Documentação em PDF
+
+Material didático para estudar e apresentar, na pasta [`docs/pdf/`](docs/pdf):
+
+| PDF | Assunto |
+|---|---|
+| O site parte por parte | Cada tela do site, o que muda no banco e exemplos de cadastro pelo Swagger |
+| O app parte por parte | Cada tela do app, organização do código e as 5 tabelas do SQLite |
+| As 12 tabelas e suas relações | O banco do site tabela por tabela, com as ligações entre elas |
+| Banco de Dados (aula) e Aula Banco de Dados | Aula sobre o banco de dados do site |
+| Os 4 tópicos do checklist | Os 4 tópicos da entrega, em versão completa, com detalhes e resumo |
+
 ## Estrutura
 
 | Pasta | Conteúdo |
@@ -59,6 +94,8 @@ Tudo que acontece no site (cadastro, pedido, baixa de estoque, avaliação) apar
 | [`docs/`](docs) | Requisitos e regras, modelagem do banco (DER, dicionário de dados, UML), casos de teste e o [checklist de entrega](docs/04-checklist-entrega.md) |
 | [`database/`](database) | `schema.sql` (tabelas, restrições e índices), `seed.sql` (dados de teste) e `migracoes.sql` (atualiza um banco existente sem apagar os dados; o Iniciar roda sozinho) |
 | [`backend/`](backend) | API REST em NestJS, site (`backend/public`), Swagger e testes — veja o [README do backend](backend/README.md) |
+| [`mobile/`](mobile) | App Android em Dart/Flutter com banco SQLite — veja o [README do app](mobile/README.md) |
+| [`docs/pdf/`](docs/pdf) | PDFs didáticos do site, do app e do banco de dados |
 
 ## Segurança
 
